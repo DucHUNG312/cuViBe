@@ -202,6 +202,18 @@ void cuViBeModel_init_8u_c3r(cuViBe::cuViBeModel *model,
   model->height = height;
   model->number_of_samples = DEFAULT_NUM_SAMPLES;
 
+  // no-op if ptr is nullptr
+  CUDA_Check(cudaFree(model->history_image));
+  model->history_image = nullptr;
+  CUDA_Check(cudaFree(model->history_buffer));
+  model->history_buffer = nullptr;
+  CUDA_Check(cudaFree(model->jump));
+  model->jump = nullptr;
+  CUDA_Check(cudaFree(model->neighbor));
+  model->neighbor = nullptr;
+  CUDA_Check(cudaFree(model->position));
+  model->position = nullptr;
+
   {
     const size_t row_bytes = 3 * width * sizeof(uint8_t);
     CUDA_Check(cudaMalloc(&model->history_image, NUMBER_OF_HISTORY_IMAGES * 3 *
@@ -343,7 +355,9 @@ cuViBe::~cuViBe() {}
 
 void cuViBe::process(const cv::cuda::GpuMat &img_input,
                      cv::cuda::GpuMat &img_output) {
-  init(img_input, img_output);
+  if (img_foreground.empty()) {
+    img_foreground = cv::cuda::GpuMat(img_input.size(), CV_8UC1, cv::Scalar(0));
+  }
 
   if (img_input.empty()) {
     return;
